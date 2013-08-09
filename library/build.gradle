@@ -1,0 +1,127 @@
+buildscript {
+    repositories {
+        maven {url 'https://commondatastorage.googleapis.com/maven-repository/'}
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:0.5.+'
+    }
+}
+
+apply plugin: 'android-library'
+apply plugin: 'maven'
+
+repositories {
+    maven {url 'http://commondatastorage.googleapis.com/maven-repository/'}
+    mavenCentral()
+}
+
+configurations {
+    deployerJars
+}
+
+dependencies {
+    compile "com.appunite:android-support-v4:[7,)"
+    deployerJars 'com.googlesource.gerrit:gs-maven-wagon:3.3.1'
+}
+
+def baseVersionName = "1.0"
+if (project.hasProperty("versionSuffix")) {
+    project.ext.versionSuffix = project.versionSuffix
+} else {
+    project.ext.versionSuffix = "snapshot"
+}
+if (project.ext.versionSuffix) {
+    version = "${baseVersionName}-${project.versionSuffix}"
+} else {
+    version = "${baseVersionName}"
+}
+archivesBaseName = "hanselandgretel"
+group = "com.appunite"
+
+android {
+    compileSdkVersion 17
+    buildToolsVersion "17"
+
+    defaultConfig {
+        minSdkVersion 7
+        targetSdkVersion 17
+    }
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['src']
+            resources.srcDirs = ['src']
+            aidl.srcDirs = ['src']
+            renderscript.srcDirs = ['src']
+            res.srcDirs = ['res']
+            assets.srcDirs = ['assets']
+        }
+
+        instrumentTest.setRoot('tests')
+    }
+}
+
+task createPomFile {
+    project.ext.pomFile = pom {
+        version = project.version
+        artifactId = project.archivesBaseName
+        groupId = project.group
+        project {
+            name 'HanselAndGretel'
+            description 'Android library providing bread crumbs to the support library fragments.'
+            url 'http://hansel-and-gretel.com'
+            inceptionYear '2012'
+
+            licenses {
+                license {
+                    name 'The Apache Software License, Version 2.0'
+                    url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    distribution 'repo'
+                }
+            }
+
+            scm {
+                url "https://github.com/JakeWharton/HanselAndGretel"
+                connection "http://hansel-and-gretel.com"
+            }
+            developers {
+                developer {
+                    name 'Jake Wharton'
+                }
+            }
+        }
+    }
+}
+
+task install(type: Upload, dependsOn: createPomFile) {
+    description = "Upload archives to local repository"
+    configuration = configurations.archives
+    repositories.mavenInstaller {
+        pom = project.ext.pomFile
+    }
+}
+
+Properties props = new Properties()
+def credentialsProperties = file("credentials.properties")
+if (credentialsProperties.exists()) {
+        props.load(new FileInputStream(credentialsProperties))
+}
+
+uploadArchives {
+    description = "Upload archives to maven repository"
+    dependsOn createPomFile
+    repositories {
+        mavenDeployer {
+            configuration = configurations.deployerJars
+            repository(url: "gs://maven-repository") {
+                authentication(
+                userName: "${props.getProperty('mavenUser', null)}" ,
+                password: "${props.getProperty('mavenPassword', null)}")
+            }
+            pom = project.ext.pomFile
+        }
+    }
+}
+
