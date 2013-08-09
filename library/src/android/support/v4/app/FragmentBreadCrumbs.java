@@ -121,6 +121,10 @@ public class FragmentBreadCrumbs extends ViewGroup
 
     public FragmentBreadCrumbs(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        mInflater = LayoutInflater.from(context);
+        mContainer = (LinearLayout)mInflater.inflate(
+                R.layout.hag__fragment_bread_crumbs,
+                this, false);
     }
 
     /**
@@ -129,10 +133,6 @@ public class FragmentBreadCrumbs extends ViewGroup
      */
     public void setActivity(FragmentActivity a) {
         mActivity = a;
-        mInflater = (LayoutInflater)a.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        mContainer = (LinearLayout)mInflater.inflate(
-                R.layout.hag__fragment_bread_crumbs,
-                this, false);
         addView(mContainer);
         a.getSupportFragmentManager().addOnBackStackChangedListener(this);
         updateCrumbs();
